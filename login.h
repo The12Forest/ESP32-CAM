@@ -1,6 +1,8 @@
-#define ESP32_NAME "DAVOS_ESP"
+#define ESP32_NAME "NAME_ESP"
 #define serverName "http://192.168.1.112/"
-#define Version "1.8"
+#define Version "2.0"
+#define OTA_Password "admin"
+#define OTA_Port 3232
 
 // LED Pins
 #define LED_BUILTIN_SMALL 33
@@ -16,12 +18,6 @@
 | |/ |/ / /___/ ___ |/ /|  /  / ____/ /_/ (__  |__  )| |/ |/ / /_/ /  __/ /  / /_/  __/ /    
 |__/|__/_____/_/  |_/_/ |_/  /_/    \__,_/____/____/ |__/|__/\____/\___/_/   \__/\___/_/                                                                                             
 */
-// const char* ssid = "WaldNet";
-// const char* password = "WaldWald";
 
-const char* ssid = "Stonehenge";
-const char* password = "Rad5isli";
-
-// const char* ssid = "Stonehenge!";
-// const char* password = "Rad5isli!";
-
+const char* ssid = "{WLAN Name}";
+const char* password = "{Wlan Passwort}";
