@@ -11,6 +11,7 @@
 // Board
 #define CAMERA_MODEL_AI_THINKER
 #define HOST_NAME ESP32_NAME
+
 /*
  _       ____    ___    _   __   ____                                           __           
 | |     / / /   /   |  / | / /  / __ \____ ____________      ______  ___  _____/ /____  _____

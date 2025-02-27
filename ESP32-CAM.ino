@@ -8,32 +8,33 @@
     On Startup create Dir
 */
 //#include <iostream>           //for the send and retrive
-#include <string.h>           //for the send and retrive
+#include <string.h>  //for the send and retrive
 
-#include <Arduino.h>          //Für default Arduino
-#include <esp_bt.h>           //Für Bluetooth
-#include <WiFi.h>             //Für das Wlan
-#include "OV2640.h"           //Für die Kamera
-#include <WiFiClient.h>       //Keine Ahnung
-#include <WebServer.h>        //Für den Webserver
-#include <HTTPClient.h>       //Für den Count und das LOG
-#include "camera_pins.h"      //Für die initialisierung der Kamera
+#include <Arduino.h>      //Für default Arduino
+#include <esp_bt.h>       //Für Bluetooth
+#include <WiFi.h>         //Für das Wlan
+#include "OV2640.h"       //Für die Kamera
+#include <WiFiClient.h>   //Keine Ahnung
+#include <WebServer.h>    //Für den Webserver
+#include <HTTPClient.h>   //Für den Count und das LOG
+#include "camera_pins.h"  //Für die initialisierung der Kamera
+
+#include <ESPmDNS.h>     //Für das OTA over WIFI
+#include <WiFiUdp.h>     //Für das OTA over WIFI
+#include <ArduinoOTA.h>  //Für das OTA over WIFI
 
 
-#include <ESPmDNS.h>          //Für das OTA over WIFI
-#include <WiFiUdp.h>          //Für das OTA over WIFI
-#include <ArduinoOTA.h>       //Für das OTA over WIFI
 
 OV2640 cam;
 WebServer server(80);
 //RemoteDebug Debug;
 unsigned long previousMillis;
-const char JHEADER[] = "HTTP/1.1 200 OK\r\n" \
-                       "Content-disposition: inline; filename=capture.jpg\r\n" \
+const char JHEADER[] = "HTTP/1.1 200 OK\r\n"
+                       "Content-disposition: inline; filename=capture.jpg\r\n"
                        "Content-type: image/jpeg\r\n\r\n";
 const int jhdLen = strlen(JHEADER);
-const char HEADER[] = "HTTP/1.1 200 OK\r\n" \
-                      "Access-Control-Allow-Origin: *\r\n" \
+const char HEADER[] = "HTTP/1.1 200 OK\r\n"
+                      "Access-Control-Allow-Origin: *\r\n"
                       "Content-Type: multipart/x-mixed-replace; boundary=123456789000000000000987654321\r\n";
 const char BOUNDARY[] = "\r\n--123456789000000000000987654321\r\n";
 const char CTNTTYPE[] = "Content-Type: image/jpeg\r\nContent-Length: ";
@@ -47,15 +48,15 @@ String Read(String address) {
   http.begin(String(url));
   int httpResponseCode = http.GET();
   if (httpResponseCode > 0) {
-      String response = http.getString();
-      // Serial.println(httpResponseCode);
-      // Serial.println(response);
-      return response;
+    String response = http.getString();
+    // Serial.println(httpResponseCode);
+    // Serial.println(response);
+    return response;
   } else {
-      Serial.println("Error on HTTP request: ");
-      // Serial.println(httpResponseCode);
-      String notfond = String("Can't connect.");
-      return notfond;
+    Serial.println("Error on HTTP request: ");
+    // Serial.println(httpResponseCode);
+    String notfond = String("Can't connect.");
+    return notfond;
   }
   http.end();
 }
@@ -69,7 +70,7 @@ void Count(String address) {
 }
 
 
-void writeLog(const String& message) {
+void writeLog(const String &message) {
   String result;
   for (size_t i = 0; i < message.length(); i++) {
     if (message[i] == ' ') {
@@ -85,7 +86,7 @@ void writeLog(const String& message) {
   http.end();
 }
 
-void handle_jpg_stream(void){
+void handle_jpg_stream(void) {
   Count("Stream");
   Serial.println("Client " + server.client().remoteIP().toString() + " connected while searching for Stream");
   writeLog("Client " + server.client().remoteIP().toString() + " connected while searching for Stream");
@@ -95,12 +96,12 @@ void handle_jpg_stream(void){
   client.write(HEADER, hdrLen);
   client.write(BOUNDARY, bdrLen);
 
-  while (true)  {
+  while (true) {
     if (!client.connected()) break;
     cam.run();
     s = cam.getSize();
     client.write(CTNTTYPE, cntLen);
-    sprintf( buf, "%d\r\n\r\n", s );
+    sprintf(buf, "%d\r\n\r\n", s);
     client.write(buf, strlen(buf));
     client.write((char *)cam.getfb(), s);
     client.write(BOUNDARY, bdrLen);
@@ -117,10 +118,10 @@ void handle_status(void) {
   client.println(F("Connection: close\r\n"));
   String buffer;
   buffer.reserve(200);
-  buffer = "{\"ok\":true, \"name\":\""ESP32_NAME"\", \"version\":\"";
+  buffer = "{\"ok\":true, \"name\":\"" ESP32_NAME "\", \"version\":\"";
   buffer += Version;
   buffer += "\", \"compile\":\"";
-  buffer += String(F(__DATE__)); 
+  buffer += String(F(__DATE__));
   buffer += "\", ";
   buffer += "\"Uptime\": \"" + String(uptime) + "s\", ";
   buffer += "\"state\":{";
@@ -155,7 +156,7 @@ void handle_flash(void) {
   writeLog("Client " + server.client().remoteIP().toString() + " connected while searching for flash");
   WiFiClient client = server.client();
   if (!client.connected()) return;
-  digitalWrite(LED_BUILTIN, HIGH);  
+  digitalWrite(LED_BUILTIN, HIGH);
   delay(90);
   cam.run();
   delay(100);
@@ -189,16 +190,16 @@ void handle_NotFound() {
 void handle_root() {
   String message = "API DEFINITION\n==============\n\n";
   message += "Version 1.0:\n";
-  message += "http://" + WiFi.localIP().toString() +"/\n";
-  message += "http://" + WiFi.localIP().toString() +"/status\n";  
-  message += "http://" + WiFi.localIP().toString() +"/jpg\n";
-  message += "http://" + WiFi.localIP().toString() +"/flash\n";
-  message += "http://" + WiFi.localIP().toString() +"/stream\n";
-  message += "http://" + WiFi.localIP().toString() +"/reboot\n";
-  message += "http://" + WiFi.localIP().toString() +"/back-led-on\n";
-  message += "http://" + WiFi.localIP().toString() +"/back-led-off\n";
-  message += "http://" + WiFi.localIP().toString() +"/front-led-on\n";
-  message += "http://" + WiFi.localIP().toString() +"/front-led-off\n";
+  message += "http://" + WiFi.localIP().toString() + "/\n";
+  message += "http://" + WiFi.localIP().toString() + "/status\n";
+  message += "http://" + WiFi.localIP().toString() + "/jpg\n";
+  message += "http://" + WiFi.localIP().toString() + "/flash\n";
+  message += "http://" + WiFi.localIP().toString() + "/stream\n";
+  message += "http://" + WiFi.localIP().toString() + "/reboot\n";
+  message += "http://" + WiFi.localIP().toString() + "/back-led-on\n";
+  message += "http://" + WiFi.localIP().toString() + "/back-led-off\n";
+  message += "http://" + WiFi.localIP().toString() + "/front-led-on\n";
+  message += "http://" + WiFi.localIP().toString() + "/front-led-off\n";
   server.send(200, "text/plain", message);
   Serial.println("Client " + server.client().remoteIP().toString() + " connected while searching for Root.");
   writeLog("Client " + server.client().remoteIP().toString() + " connected while searching for Root.");
@@ -211,8 +212,9 @@ void handle_reboot() {
   writeLog(String(ESP32_NAME) + " will reboot now.");
   Serial.println(String(ESP32_NAME) + " will reboot now!");
   server.send(200, "text/plain", String(ESP32_NAME) + " will reboot now!");
-  ESP.restart();
   Count("Reboot");
+  delay(200);
+  ESP.restart();
 }
 
 void initCam() {
@@ -241,14 +243,14 @@ void initCam() {
   // Frame parameters
   // https://randomnerdtutorials.com/esp32-cam-ov2640-camera-settings/
   //  config.frame_size = FRAMESIZE_UXGA;
-  // config.frame_size = FRAMESIZE_SXGA; 
+  // config.frame_size = FRAMESIZE_SXGA;
   // config.jpeg_quality = 10; //10-63 lower number means higher quality
   // config.fb_count = 1;
   // cam.init(config);
 
-  if(psramFound()){
-    config.frame_size = FRAMESIZE_UXGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
-    config.jpeg_quality = 8; //10-63 lower number means higher quality
+  if (psramFound()) {
+    config.frame_size = FRAMESIZE_UXGA;  // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
+    config.jpeg_quality = 8;             //10-63 lower number means higher quality
     config.fb_count = 1;
   } else {
     config.frame_size = FRAMESIZE_SVGA;
@@ -260,29 +262,29 @@ void initCam() {
     Serial.printf("Camera init failed with error 0x%x", err);
     return;
   }
-  sensor_t * s = esp_camera_sensor_get();
-  s->set_brightness(s, 0);     // -2 to 2
-  s->set_contrast(s, 0);       // -2 to 2
-  s->set_saturation(s, 0);     // -2 to 2
-  s->set_special_effect(s, 0); // 0 to 6 (0 - No Effect, 1 - Negative, 2 - Grayscale, 3 - Red Tint, 4 - Green Tint, 5 - Blue Tint, 6 - Sepia)
-  s->set_whitebal(s, 1);       // 0 = disable , 1 = enable
-  s->set_awb_gain(s, 1);       // 0 = disable , 1 = enable
-  s->set_wb_mode(s, 0);        // 0 to 4 - if awb_gain enabled (0 - Auto, 1 - Sunny, 2 - Cloudy, 3 - Office, 4 - Home)
-  s->set_exposure_ctrl(s, 1);  // 0 = disable , 1 = enable
-  s->set_aec2(s, 0);           // 0 = disable , 1 = enable
-  s->set_ae_level(s, 0);       // -2 to 2
-  s->set_aec_value(s, 300);    // 0 to 1200
-  s->set_gain_ctrl(s, 1);      // 0 = disable , 1 = enable
-  s->set_agc_gain(s, 0);       // 0 to 30
+  sensor_t *s = esp_camera_sensor_get();
+  s->set_brightness(s, 0);                  // -2 to 2
+  s->set_contrast(s, 0);                    // -2 to 2
+  s->set_saturation(s, 0);                  // -2 to 2
+  s->set_special_effect(s, 0);              // 0 to 6 (0 - No Effect, 1 - Negative, 2 - Grayscale, 3 - Red Tint, 4 - Green Tint, 5 - Blue Tint, 6 - Sepia)
+  s->set_whitebal(s, 1);                    // 0 = disable , 1 = enable
+  s->set_awb_gain(s, 1);                    // 0 = disable , 1 = enable
+  s->set_wb_mode(s, 0);                     // 0 to 4 - if awb_gain enabled (0 - Auto, 1 - Sunny, 2 - Cloudy, 3 - Office, 4 - Home)
+  s->set_exposure_ctrl(s, 1);               // 0 = disable , 1 = enable
+  s->set_aec2(s, 0);                        // 0 = disable , 1 = enable
+  s->set_ae_level(s, 0);                    // -2 to 2
+  s->set_aec_value(s, 300);                 // 0 to 1200
+  s->set_gain_ctrl(s, 1);                   // 0 = disable , 1 = enable
+  s->set_agc_gain(s, 0);                    // 0 to 30
   s->set_gainceiling(s, (gainceiling_t)0);  // 0 to 6
-  s->set_bpc(s, 0);            // 0 = disable , 1 = enable
-  s->set_wpc(s, 1);            // 0 = disable , 1 = enable
-  s->set_raw_gma(s, 1);        // 0 = disable , 1 = enable
-  s->set_lenc(s, 1);           // 0 = disable , 1 = enable
-  s->set_hmirror(s, 1);        // 0 = disable , 1 = enable
-  s->set_vflip(s, 1);          // 0 = disable , 1 = enable
-  s->set_dcw(s, 1);            // 0 = disable , 1 = enable
-  s->set_colorbar(s, 0);       // 0 = disable , 1 = enable
+  s->set_bpc(s, 0);                         // 0 = disable , 1 = enable
+  s->set_wpc(s, 1);                         // 0 = disable , 1 = enable
+  s->set_raw_gma(s, 1);                     // 0 = disable , 1 = enable
+  s->set_lenc(s, 1);                        // 0 = disable , 1 = enable
+  s->set_hmirror(s, 1);                     // 0 = disable , 1 = enable
+  s->set_vflip(s, 1);                       // 0 = disable , 1 = enable
+  s->set_dcw(s, 1);                         // 0 = disable , 1 = enable
+  s->set_colorbar(s, 0);                    // 0 = disable , 1 = enable
 
   cam.run();
   cam.run();
@@ -328,18 +330,18 @@ void initDirectory() {
 }
 
 void initServer() {
-  server.on("/jpg",             HTTP_GET, handle_jpg);
-  server.on("/flash",           HTTP_GET, handle_flash);
-  server.on("/stream",          HTTP_GET, handle_jpg_stream);
-  server.on("/status",          HTTP_GET, handle_status);
-  server.on("/reboot",          HTTP_GET, handle_reboot);
-  server.on("/back-led-on",     HTTP_GET, handle_back_on);
-  server.on("/back-led-off",    HTTP_GET, handle_back_off);
-  server.on("/front-led-on",    HTTP_GET, handle_fornt_on);
-  server.on("/front-led-off",   HTTP_GET, handle_front_off);
-  server.on("/",                HTTP_GET, handle_root);
+  server.on("/jpg", HTTP_GET, handle_jpg);
+  server.on("/flash", HTTP_GET, handle_flash);
+  server.on("/stream", HTTP_GET, handle_jpg_stream);
+  server.on("/status", HTTP_GET, handle_status);
+  server.on("/reboot", HTTP_GET, handle_reboot);
+  server.on("/back-led-on", HTTP_GET, handle_back_on);
+  server.on("/back-led-off", HTTP_GET, handle_back_off);
+  server.on("/front-led-on", HTTP_GET, handle_fornt_on);
+  server.on("/front-led-off", HTTP_GET, handle_front_off);
+  server.on("/", HTTP_GET, handle_root);
   server.onNotFound(handle_NotFound);
-  server.begin();   
+  server.begin();
   Serial.println("Webserver Started");
   writeLog("Webserver Started");
 }
@@ -385,7 +387,7 @@ void initWifiOTA() {
       String type;
       if (ArduinoOTA.getCommand() == U_FLASH)
         type = "sketch";
-      else // U_SPIFFS
+      else  // U_SPIFFS
         type = "filesystem";
 
       // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
@@ -427,9 +429,9 @@ void setup() {
   esp_bt_controller_disable();
   esp_log_level_set("*", ESP_LOG_WARN);
   btStop();
-  
+
   Serial.println("Cam startup succesfull!");
-  writeLog("Connecting to" + String(ssid));
+  writeLog("Connecting to " + String(ssid));
   writeLog("WiFi connected: " + WiFi.localIP().toString());
   Count("StartUP");
 
@@ -452,7 +454,7 @@ void setup() {
 void loop() {
   server.handleClient();
   ArduinoOTA.handle();
-  delay(150);
+  delay(300);
   // https://microcontrollerslab.com/reconnect-esp32-to-wifi-after-lost-connection/
   if (WiFi.status() != WL_CONNECTED) {
     Serial.print(F("WiFi connection lost. Going for restart ..."));
@@ -460,14 +462,14 @@ void loop() {
     // delay(20*1000);
     ESP.restart();
   }
-  if (millis() / 1000 > 3600) {
+  if (millis() / 1000 > 86400) {
     writeLog(String(ESP32_NAME) + " is running to long.");
     writeLog(String(ESP32_NAME) + " will reboot now.");
     ESP.restart();
   }
 
-  delay(150);
-  // https://www.instructables.com/ESP32-Deep-Sleep-Tutorial/  
+  delay(300);
+  // https://www.instructables.com/ESP32-Deep-Sleep-Tutorial/
   // https://www.mischianti.org/2021/03/10/esp32-power-saving-modem-and-light-sleep-2/
   // https://www.mischianti.org/2021/03/06/esp32-practical-power-saving-manage-wifi-and-cpu-1/
   //esp_sleep_enable_timer_wakeup(0.2 * 1000 * 1000);
